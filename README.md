@@ -17,6 +17,7 @@ This is a Julia script to scrape a users brewtoad account.  Currently downloads
 ```bash
 $ cd brewtoad-scrape
 
+# install dependencies:
 $ julia -e 'using Pkg; pkg"activate .; instantiate"'
 
 $ julia --project=. scrape.jl <brewtoad-user-id>
