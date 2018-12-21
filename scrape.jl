@@ -77,10 +77,14 @@ function process_brewlog(brewlog_link)
 
     date = [n.text for n in PreOrderDFS(brewlog.root)
             if n isa HTMLText && n.parent isa HTMLElement{:strong}]
-    date = Date(first(date), dateformat"U d, y")
+    date = try 
+        Date(first(date), dateformat"U d, y")
+    catch
+        date
+    end
 
     path = joinpath(recipe_dir, "brewlogs")
-    makepath(path)
+    mkpath(path)
     open(joinpath(path, "$date.html"), "w") do f
         println("  brewlog $path/$date.html")
         write(f, brewlog_html)
