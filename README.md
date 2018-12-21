@@ -21,3 +21,7 @@ $ julia -e 'using Pkg; pkg"activate .; instantiate"'
 
 $ julia --project=. scrape.jl <brewtoad-user-id>
 ```
+
+## Scraped data
+
+This repository also contains my own scraped data in `/recipes`
