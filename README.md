@@ -33,7 +33,7 @@ streamline the selector/querying parts.
 At some point brewtoad started returning 403: Forbidden responses to requests
 from HTTP.jl (even with `User-Agent` set to something sensible), while still
 serving pages normally for both a private browser window and `curl`.  So I
-replaced all the `HTTP.request("GET", uri)` with `String(read(\`curl $uri\`)`
+replaced all the `HTTP.request("GET", uri)` with ``String(read(`curl $uri`)``
 because I was too lazy to figure out what was really going wrong.
 
 ## Scraped data
