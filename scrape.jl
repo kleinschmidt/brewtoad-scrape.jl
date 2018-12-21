@@ -1,4 +1,6 @@
-using Gumbo, HTTP, AbstractTrees
+using Gumbo, HTTP, AbstractTrees, Dates
+
+const ifilter = Iterators.filter
 
 userid = if length(ARGS) ≥ 1
     ARGS[1]
@@ -37,8 +39,8 @@ function process_recipe(recipe_link)
     recipe_dir = "recipes/$recipe_str"
     mkpath(recipe_dir)
 
-    title = strip(first(Iterators.filter(n -> n isa HTMLText && n.parent isa HTMLElement{:h1},
-                                         PreOrderDFS(recipe.root))).text)
+    title = strip(first(ifilter(n -> n isa HTMLText && n.parent isa HTMLElement{:h1},
+                                PreOrderDFS(recipe.root))).text)
 
     println("processing recipe \"$title\" → $recipe_dir")
 
@@ -52,6 +54,37 @@ function process_recipe(recipe_link)
         write(f, HTTP.request("GET", baseurl * recipe_link * ".xml").body)
     end
     
+end
+
+function extract_brewlogs(recipe_link)
+    brewlogs = parsehtml(String(HTTP.request("GET",
+                                             baseurl * recipe_link * "/brew-logs").body))
+
+    brewlog_links = 
+        [attrs(n)["href"]
+         for n
+         in PreOrderDFS(brewlogs.root)
+         if n isa HTMLElement{:a} && occursin(r"brew-logs/", get(attrs(n), "href", ""))]
+
+end
+
+function process_brewlog(brewlog_link)
+    brewlog_html = String(HTTP.request("GET", baseurl * brewlog_link).body)
+    brewlog = parsehtml(brewlog_html)
+
+    recipe_str = match(r"/recipes/(.*)/brew-logs/.*", brewlog_link).captures[1]
+    recipe_dir = "recipes/$recipe_str"
+
+    date = [n.text for n in PreOrderDFS(brewlog.root)
+            if n isa HTMLText && n.parent isa HTMLElement{:strong}]
+    date = Date(first(date), dateformat"U d, y")
+
+    path = joinpath(recipe_dir, "brewlogs")
+    makepath(path)
+    open(joinpath(path, "$date.html"), "w") do f
+        println("  brewlog $path/$date.html")
+        write(f, brewlog_html)
+    end
 end
 
 
