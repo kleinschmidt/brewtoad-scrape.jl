@@ -1,5 +1,7 @@
 using Gumbo, HTTP, AbstractTrees, Dates
 
+my_get(uri) = String(read(`curl --silent $uri`))
+
 const ifilter = Iterators.filter
 
 userid = if length(ARGS) ≥ 1
@@ -15,7 +17,7 @@ function recipe_links(userid)
     recipelinks = String[]
     pages = [baseurl * "/users/" * string(userid) * "/recipes"]
     while !isempty(pages)
-        page = parsehtml(String(HTTP.request("GET", pop!(pages)).body))
+        page = parsehtml(my_get(pop!(pages)))
         for node in PreOrderDFS(page.root)
             node isa HTMLElement{:a} || continue
             class = get(attrs(node), "class", "")
@@ -33,7 +35,8 @@ function recipe_links(userid)
 end
 
 function process_recipe(recipe_link)
-    recipe_html = String(HTTP.request("GET", baseurl * recipe_link).body)
+    # recipe_html = String(HTTP.request("GET", baseurl * recipe_link).body)
+    recipe_html = my_get(baseurl * recipe_link)
     recipe = parsehtml(recipe_html)
     recipe_str = match(r"/recipes/(.*)", recipe_link).captures[1]
     recipe_dir = "recipes/$recipe_str"
@@ -51,14 +54,19 @@ function process_recipe(recipe_link)
     
     open(joinpath(recipe_dir, "$recipe_str.xml"), "w") do f
         println("  writing XML for $title to $(f.name)...")
-        write(f, HTTP.request("GET", baseurl * recipe_link * ".xml").body)
+        # write(f, HTTP.request("GET", baseurl * recipe_link * ".xml").body)
+        write(f, my_get(baseurl * recipe_link * ".xml"))
     end
     
+    brewlogs = extract_brewlogs(recipe_link)
+    foreach(process_brewlog, brewlogs)
+
 end
 
 function extract_brewlogs(recipe_link)
-    brewlogs = parsehtml(String(HTTP.request("GET",
-                                             baseurl * recipe_link * "/brew-logs").body))
+    # brewlogs = parsehtml(String(HTTP.request("GET",
+    #                                          baseurl * recipe_link * "/brew-logs").body))
+    brewlogs = parsehtml(my_get(baseurl * recipe_link * "/brew-logs"))
 
     brewlog_links = 
         [attrs(n)["href"]
@@ -69,7 +77,8 @@ function extract_brewlogs(recipe_link)
 end
 
 function process_brewlog(brewlog_link)
-    brewlog_html = String(HTTP.request("GET", baseurl * brewlog_link).body)
+    # brewlog_html = String(HTTP.request("GET", baseurl * brewlog_link).body)
+    brewlog_html = my_get(baseurl * brewlog_link)
     brewlog = parsehtml(brewlog_html)
 
     recipe_str = match(r"/recipes/(.*)/brew-logs/.*", brewlog_link).captures[1]
